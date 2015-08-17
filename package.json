@@ -11,7 +11,7 @@
     "url": "https://github.com/charto/autodts-generator.git"
   },
   "bin": {
-    "dts-generator": "bin/dts-generator"
+    "autodts-generator": "bin/autodts-generator"
   },
   "dependencies": {
     "bluebird": "~2.9.34",

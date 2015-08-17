@@ -6,7 +6,7 @@
         "noImplicitAny": true
     },
     "files": [
-        "./bin/dts-generator.ts",
+        "./bin/autodts-generator.ts",
         "./index.ts",
         "./typings/tsd.d.ts"
     ]
