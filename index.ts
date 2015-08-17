@@ -62,7 +62,7 @@ function getFilenames(baseDir: string, files:string[]): string[] {
 	});
 }
 
-function processTree(sourceFile: ts.SourceFile, replacer:(node: ts.Node) => string): string {
+function processTree(sourceFile: ts.SourceFile, replacer:(node: ts.Node, parent: ts.Node) => string): string {
 	var code = '';
 	var cursorPosition = 0;
 
@@ -75,21 +75,22 @@ function processTree(sourceFile: ts.SourceFile, replacer:(node: ts.Node) => stri
 		cursorPosition = node.pos;
 	}
 
-	function visit(node: ts.Node) {
+	function visit(node: ts.Node, parent: ts.Node) {
 		readThrough(node);
 
-		var replacement = replacer(node);
+		var replacement = replacer(node, parent);
 
 		if (replacement != null) {
 			code += replacement;
 			skip(node);
 		}
 		else {
-			ts.forEachChild(node, visit);
+			parent = node;
+			ts.forEachChild(node, (node) => {visit(node, parent)});
 		}
 	}
 
-	visit(sourceFile);
+	visit(sourceFile, null);
 	code += sourceFile.text.slice(cursorPosition);
 
 	return code;
@@ -189,7 +190,7 @@ export function generate(options: Options, sendMessage: (message: string) => voi
 		if (declarationFile.externalModuleIndicator) {
 			output.write('declare module \'' + sourceModuleId + '\' {' + eol + indent);
 
-			var content = processTree(declarationFile, function (node) {
+			var content = processTree(declarationFile, function (node, parent) {
 				if (node.kind === ts.SyntaxKind.ExternalModuleReference) {
 					var expression = <ts.LiteralExpression> (<ts.ExternalModuleReference> node).expression;
 
@@ -202,7 +203,7 @@ export function generate(options: Options, sendMessage: (message: string) => voi
 				}
 				else if (
 					node.kind === ts.SyntaxKind.StringLiteral &&
-					(node.parent.kind === ts.SyntaxKind.ExportDeclaration || node.parent.kind === ts.SyntaxKind.ImportDeclaration)
+					(parent.kind === ts.SyntaxKind.ExportDeclaration || parent.kind === ts.SyntaxKind.ImportDeclaration)
 				) {
 					var text = (<ts.StringLiteral> node).text;
 					if (text.charAt(0) === '.') {
