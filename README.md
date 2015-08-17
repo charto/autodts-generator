@@ -1,6 +1,8 @@
 .d.ts generator
 ===============
 
+This is a fork of [dts-generator](https://github.com/SitePen/dts-generator) patched to work better with [autodts](https://github.com/charto/autodts).
+
 Generates a single .d.ts bundle containing external module declarations generated from TypeScript files.
 
 ## What does this mean?
@@ -94,3 +96,4 @@ figure out how to influence the code emitter.
 ## Licensing
 
 © 2015 SitePen, Inc. New BSD License.
+© 2015 BusFaster Ltd. New BSD License.
