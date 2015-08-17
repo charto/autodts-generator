@@ -1,7 +1,6 @@
 /// <reference path="./typings/tsd" />
 
 import fs = require('fs');
-import glob = require('glob');
 import mkdirp = require('mkdirp');
 import os = require('os');
 import pathUtil = require('path');
@@ -119,7 +118,6 @@ export function generate(options: Options, sendMessage: (message: string) => voi
 
 	var host = ts.createCompilerHost(compilerOptions);
 	var program = ts.createProgram(filenames, compilerOptions, host);
-	var checker = ts.createTypeChecker(program, true);
 
 	function writeFile(filename: string, data: string, writeByteOrderMark: boolean) {
 		// Compiler is emitting the non-declaration file, which we do not care about
@@ -206,7 +204,7 @@ export function generate(options: Options, sendMessage: (message: string) => voi
 					node.kind === ts.SyntaxKind.StringLiteral &&
 					(node.parent.kind === ts.SyntaxKind.ExportDeclaration || node.parent.kind === ts.SyntaxKind.ImportDeclaration)
 				) {
-					var text = (<ts.StringLiteralTypeNode> node).text;
+					var text = (<ts.StringLiteral> node).text;
 					if (text.charAt(0) === '.') {
 						return ` '${filenameToMid(pathUtil.join(pathUtil.dirname(sourceModuleId), text))}'`;
 					}
