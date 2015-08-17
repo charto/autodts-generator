@@ -1,14 +1,14 @@
 {
-  "name": "dts-generator",
+  "name": "@lib/autodts-generator",
   "description": ".d.ts generator. Generates a single d.ts bundle containing external modules from TypeScript files.",
-  "version": "1.6.0-pre",
+  "version": "0.0.1",
   "bugs": {
-    "url": "https://github.com/SitePen/dts-generator/issues"
+    "url": "https://github.com/charto/autodts-generator/issues"
   },
   "license": "BSD-3-Clause",
   "repository": {
     "type": "git",
-    "url": "https://github.com/SitePen/dts-generator.git"
+    "url": "https://github.com/charto/autodts-generator.git"
   },
   "bin": {
     "dts-generator": "bin/dts-generator"
