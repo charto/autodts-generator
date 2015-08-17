@@ -116,6 +116,12 @@ export function generate(options: Options, sendMessage: (message: string) => voi
 
 	mkdirp.sync(pathUtil.dirname(options.out));
 	var output = fs.createWriteStream(options.out, { mode: parseInt('644', 8) });
+	var outputRef: fs.WriteStream;
+	var outputRefPath: string;
+	if(options.out.slice(-5) === '.d.ts') {
+		outputRefPath = options.out.slice(0, -5) + '.ref.d.ts';
+		outputRef = fs.createWriteStream(outputRefPath, { mode: parseInt('644', 8) });
+	}
 
 	var host = ts.createCompilerHost(compilerOptions);
 	var program = ts.createProgram(filenames, compilerOptions, host);
@@ -132,6 +138,8 @@ export function generate(options: Options, sendMessage: (message: string) => voi
 	return new Promise<void>(function (resolve, reject) {
 		output.on('close', () => { resolve(undefined); });
 		output.on('error', reject);
+
+		if(outputRefPath) output.write(`/// <reference path="${outputRefPath}" />` + eol);
 
 		if (options.externs) {
 			options.externs.forEach(function (path: string) {
@@ -181,6 +189,7 @@ export function generate(options: Options, sendMessage: (message: string) => voi
 		}
 
 		output.end();
+		if(outputRef) outputRef.end();
 	});
 
 	function writeDeclaration(declarationFile: ts.SourceFile) {
@@ -188,6 +197,21 @@ export function generate(options: Options, sendMessage: (message: string) => voi
 		var sourceModuleId = options.name + filenameToMid(filename.slice(baseDir.length, -5));
 
 		if (declarationFile.externalModuleIndicator) {
+			if(outputRefPath) {
+				declarationFile.referencedFiles.forEach((refPath) => {
+					var refFullPath = pathUtil.resolve(
+						pathUtil.dirname(pathUtil.resolve(baseDir, filename)),
+						refPath.fileName
+					);
+
+					var refRelPath = filenameToMid(pathUtil.relative(
+						pathUtil.dirname(outputRefPath),
+						refFullPath
+					));
+
+					outputRef.write(`/// <reference path="${refRelPath}" />` + eol);
+				});
+			}
 			output.write('declare module \'' + sourceModuleId + '\' {' + eol + indent);
 
 			var content = processTree(declarationFile, function (node, parent) {
