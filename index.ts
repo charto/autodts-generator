@@ -117,7 +117,11 @@ export function generate(options: Options, sendMessage: (message: string) => voi
 	mkdirp.sync(pathUtil.dirname(options.out));
 	var output = fs.createWriteStream(options.out, { mode: parseInt('644', 8) });
 	var outputRef: fs.WriteStream;
+	var outputString = '';
 	var outputRefPath: string;
+	var outputRefString = '';
+	var wroteToOutputRef = false;
+
 	if(options.out.slice(-5) === '.d.ts') {
 		outputRefPath = options.out.slice(0, -5) + '.ref.d.ts';
 		outputRef = fs.createWriteStream(outputRefPath, { mode: parseInt('644', 8) });
@@ -136,15 +140,15 @@ export function generate(options: Options, sendMessage: (message: string) => voi
 	}
 
 	return new Promise<void>(function (resolve, reject) {
-		output.on('close', () => { resolve(undefined); });
-		output.on('error', reject);
+		var closeResolver: () => void = () => { resolve(undefined); };
 
-		if(outputRefPath) output.write(`/// <reference path="${outputRefPath}" />` + eol);
+		output.on('close', closeResolver);
+		output.on('error', reject);
 
 		if (options.externs) {
 			options.externs.forEach(function (path: string) {
 				sendMessage(`Writing external dependency ${path}`);
-				output.write(`/// <reference path="${path}" />` + eol);
+				outputString += `/// <reference path="${path}" />` + eol
 			});
 		}
 
@@ -181,15 +185,50 @@ export function generate(options: Options, sendMessage: (message: string) => voi
 		});
 
 		if (options.main) {
-			output.write(`declare module '${options.name}' {` + eol + indent);
-			output.write(`import main = require('${options.main}');` + eol + indent);
-			output.write('export = main;' + eol);
-			output.write('}' + eol);
+			outputString += `declare module '${options.name}' {` + eol + indent;
+			outputString += `import main = require('${options.main}');` + eol + indent;
+			outputString += 'export = main;' + eol;
+			outputString += '}' + eol;
 			sendMessage(`Aliased main module ${options.name} to ${options.main}`);
 		}
 
-		output.end();
-		if(outputRef) outputRef.end();
+		if(wroteToOutputRef) {
+			outputString = (`/// <reference path="${outputRefPath}" />` + eol) + outputString;
+		}
+
+		output.write(outputString);
+
+		// output.end() will complete our promise, if we need to delete an empty outputRef file then don't complete
+		// until unlink has completed, otherwise complete now.
+		if(outputRef) {
+			if(wroteToOutputRef) {
+				outputRef.write(outputRefString);
+			}
+
+			outputRef.end();
+
+			if(!wroteToOutputRef) {
+				fs.unlink(outputRefPath, (err: NodeJS.ErrnoException) => {
+					if(err) {
+						sendMessage(`Error on unlink of \'"${outputRefPath}"\': "${err}"`);
+
+						// Don't want our close listener to call resolve, as we are about to call reject
+						output.removeListener('close', closeResolver);
+						output.end();
+						reject(err);
+					}
+					else {
+						output.end();
+					}
+				});
+			}
+			else {
+				output.end();
+			}
+		}
+		else {
+			output.end();
+		}
 	});
 
 	function writeDeclaration(declarationFile: ts.SourceFile) {
@@ -209,10 +248,11 @@ export function generate(options: Options, sendMessage: (message: string) => voi
 						refFullPath
 					));
 
-					outputRef.write(`/// <reference path="${refRelPath}" />` + eol);
+					outputRefString += `/// <reference path="${refRelPath}" />` + eol;
+					wroteToOutputRef = true;
 				});
 			}
-			output.write('declare module \'' + sourceModuleId + '\' {' + eol + indent);
+			outputString += 'declare module \'' + sourceModuleId + '\' {' + eol + indent;
 
 			var content = processTree(declarationFile, function (node, parent) {
 				if (node.kind === ts.SyntaxKind.ExternalModuleReference) {
@@ -236,11 +276,11 @@ export function generate(options: Options, sendMessage: (message: string) => voi
 				}
 			});
 
-			output.write(content.replace(nonEmptyLineStart, '$&' + indent));
-			output.write(eol + '}' + eol);
+			outputString += content.replace(nonEmptyLineStart, '$&' + indent);
+			outputString += eol + '}' + eol;
 		}
 		else {
-			output.write(declarationFile.text);
+			outputString += declarationFile.text;
 		}
 	}
 }
