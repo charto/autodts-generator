@@ -6,16 +6,16 @@
   "bundle": "typings/tsd.d.ts",
   "installed": {
     "node/node.d.ts": {
-      "commit": "0605ebbdbdd8183c70b4a14e1e34ecb3f2b446bf"
+      "commit": "421d6610bdb09e1015b71f5991d7a68d079eca21"
     },
     "typescript/typescript.d.ts": {
-      "commit": "4f0eec65afc75001ef6ce2af5734f5dfc1b5568d"
+      "commit": "421d6610bdb09e1015b71f5991d7a68d079eca21"
     },
     "bluebird/bluebird.d.ts": {
-      "commit": "7bab855ae33d79e86da1eb6c73a7f7eab2676ddb"
+      "commit": "421d6610bdb09e1015b71f5991d7a68d079eca21"
     },
     "mkdirp/mkdirp.d.ts": {
-      "commit": "35fffaa44bff5392741b3022d805fe3563023a3d"
+      "commit": "421d6610bdb09e1015b71f5991d7a68d079eca21"
     }
   }
 }

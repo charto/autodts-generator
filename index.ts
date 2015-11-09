@@ -235,7 +235,7 @@ export function generate(options: Options, sendMessage: (message: string) => voi
 		var filename = declarationFile.fileName;
 		var sourceModuleId = options.name + filenameToMid(filename.slice(baseDir.length, -5));
 
-		if (declarationFile.externalModuleIndicator) {
+		if ((declarationFile as any).externalModuleIndicator) {
 			if(outputRefPath) {
 				declarationFile.referencedFiles.forEach((refPath) => {
 					var refFullPath = pathUtil.resolve(
